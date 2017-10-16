@@ -136,12 +136,13 @@ func (s *Socket) Shutdown(endpoint *Endpoint) error {
 // Send sends a message containing the data. The flags argument can be zero or
 // DontWait.
 func (s *Socket) Send(data []byte, flags int) (int, error) {
-	var buf unsafe.Pointer
-	if len(data) != 0 {
-		buf = unsafe.Pointer(&data[0])
+	// ZDY: fix for cgo 1.6+=
+	// refer to https://github.com/golang/go/issues/14210
+	if len(data) == 0 {
+		data = []byte{0}
 	}
 	length := C.size_t(len(data))
-	size, err := C.nn_send(s.socket, buf, length, C.int(flags))
+	size, err := C.nn_send(s.socket, unsafe.Pointer(&data[0]), length, C.int(flags))
 	if size < 0 {
 		return int(size), nnError(err)
 	}
